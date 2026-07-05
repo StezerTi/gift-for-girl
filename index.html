@@ -1,124 +1,455 @@
-// ================= НАСТРОЙКА ЗАГАДОК И ОТВЕТОВ =================
-const questData = [
-    {
-        riddle: "Загадка 0: Дата нашего знакомства в формате ДДММ (например, если 12 мая, то 1205)",
-        answer: "1205" 
-    },
-    {
-        riddle: "Загадка 2: Наше любимое кодовое слово или город, куда мы мечтаем отправиться вместе?",
-        answer: "Питер"
-    },
-    {
-        riddle: "Загадка 3: Какое кодовое слово мы использовали, когда не хотели идти на пары/уроки?",
-        answer: "эвакуация"
-    }
-];
-
-const giftLocation = "На полке под твоим любимым свитшотом! ❤️";
-// =============================================================
-
-let currentStep = 0;
-let isProcessing = false;
-
-const introScreen = document.getElementById('introScreen');
-const lockScreen = document.getElementById('lockScreen');
-const riddleEl = document.getElementById('riddleText');
-const statusEl = document.getElementById('statusBar');
-const inputEl = document.getElementById('lockInputField');
-const successScreen = document.getElementById('successScreen');
-const giftModal = document.getElementById('giftModal');
-const giftLocationEl = document.getElementById('giftLocationText');
-
-const btnStartQuest = document.getElementById('btnStartQuest');
-const btnCheckAnswer = document.getElementById('btnCheckAnswer');
-const btnOpenGift = document.getElementById('btnOpenGift');
-const btnCloseGift = document.getElementById('btnCloseGift');
-
-function startQuest() {
-    introScreen.style.display = 'none';
-    lockScreen.style.display = 'block';
-    loadStep();
-}
-
-function loadStep() {
-    riddleEl.parentElement.classList.remove('next-level-flash');
-    void riddleEl.offsetWidth; 
-    riddleEl.parentElement.classList.add('next-level-flash');
-
-    riddleEl.textContent = questData[currentStep].riddle;
-    statusEl.textContent = `Уровень защиты: ${currentStep + 1} из ${questData.length}`;
-    statusEl.style.color = '#00ff66';
-    setTimeout(() => { statusEl.style.color = '#555'; }, 400);
-
-    inputEl.value = "";
-    inputEl.classList.remove('error-state');
-    inputEl.placeholder = "ВВЕДИТЕ ОТВЕТ...";
-    
-    // Жёстко отключаем фокус и прячем клавиатуру на стыке уровней
-    inputEl.blur(); 
-    
-    isProcessing = false;
-}
-
-function checkAnswer() {
-    if (isProcessing) return;
-    
-    const val = inputEl.value.trim().toLowerCase();
-    const ans = questData[currentStep].answer.trim().toLowerCase();
-
-    if (val === "") return;
-    
-    isProcessing = true;
-    inputEl.blur(); // Скрываем мобильную клавиатуру сразу при клике на кнопку
-
-    if (val === ans) {
-        currentStep++;
-        if (currentStep < questData.length) {
-            loadStep();
-        } else {
-            lockScreen.style.display = 'none';
-            successScreen.style.display = 'block';
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>S e c u r e _ L o c k</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', Courier, monospace;
+            -webkit-tap-highlight-color: transparent;
         }
-    } else {
-        inputEl.classList.add('error-state');
-        inputEl.value = "";
-        inputEl.placeholder = "НЕВЕРНЫЙ КОД!";
+
+        body {
+            background-color: #0a0a0a;
+            color: #d4d4d4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Анимация плавного появления самого терминала */
+        .terminal-container {
+            max-width: 450px;
+            width: 100%;
+            background: #111111;
+            padding: 35px 25px;
+            border-radius: 16px;
+            border: 2px solid #222;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
+            text-align: center;
+            animation: terminalSpawn 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            position: relative;
+        }
+
+        @keyframes terminalSpawn {
+            0% {
+                opacity: 0;
+                transform: scale(0.92) translateY(20px);
+                border-color: #111;
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+                border-color: #222;
+            }
+        }
+
+        h1 {
+            color: #ffffff;
+            font-size: 20px;
+            margin-bottom: 5px;
+            letter-spacing: 3px;
+        }
+
+        .status-bar {
+            font-size: 11px;
+            color: #555;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: color 0.3s ease;
+        }
+
+        /* Появление блока с загадкой и текстом */
+        .riddle-box, .intro-box {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #a3a3a3;
+            margin-bottom: 25px;
+            min-height: 70px;
+            padding: 20px;
+            background: #151515;
+            border-radius: 8px;
+            border: 1px solid #1c1c1c;
+            text-align: left;
+        }
+
+        .intro-box {
+            color: #ffffff;
+            animation: fadeInElement 0.6s ease forwards;
+            animation-delay: 0.3s;
+        }
+
+        .input-container {
+            margin-bottom: 25px;
+        }
+
+        /* Стили инпута с анимацией свечения */
+        .lock-input {
+            width: 100%;
+            background-color: #050505;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 15px;
+            font-size: 20px;
+            color: #00ff66;
+            text-shadow: 0 0 8px rgba(0, 255, 102, 0.5);
+            text-align: center;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .lock-input:focus {
+            border-color: #00ff66;
+            box-shadow: 0 0 15px rgba(0, 255, 102, 0.25);
+        }
+
+        /* Динамическая пульсация при ошибке */
+        .lock-input.error-state {
+            color: #ff3333;
+            text-shadow: 0 0 8px rgba(255, 51, 51, 0.6);
+            border-color: #ff3333;
+            background-color: #1a0505;
+            animation: shakeError 0.4s ease-in-out;
+        }
+
+        @keyframes shakeError {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        /* Кнопки с эффектом нажатия */
+        .action-enter, .btn-gift, .btn-start {
+            width: 100%;
+            background: #1a1a1a;
+            color: #00ff66;
+            border: 1px solid #2a2a2a;
+            padding: 15px 0;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            letter-spacing: 2px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            touch-action: manipulation;
+        }
+
+        .btn-start {
+            background: #151515;
+            border-color: #333;
+            color: #ffffff;
+        }
+
+        .action-enter:hover, .btn-gift:hover, .btn-start:hover {
+            background: #222;
+            border-color: #00ff66;
+            box-shadow: 0 0 10px rgba(0, 255, 102, 0.15);
+        }
+
+        .btn-start:hover {
+            color: #00ff66;
+        }
+
+        .action-enter:active, .btn-gift:active, .btn-start:active {
+            transform: scale(0.95);
+            background: #050505;
+            border-color: #00cc52;
+        }
+
+        .btn-gift {
+            margin-top: 20px;
+            background: #091a0f;
+            border-color: #00ff66;
+            color: #00ff66;
+            text-shadow: 0 0 5px rgba(0,255,102,0.4);
+            box-shadow: 0 4px 15px rgba(0,255,102,0.1);
+        }
+
+        /* Разделы экранов */
+        .quest-section {
+            display: none;
+        }
+
+        .success-screen {
+            display: none;
+            text-align: left;
+        }
+
+        .success-screen h1 {
+            color: #00ff66;
+            text-shadow: 0 0 15px rgba(0, 255, 102, 0.4);
+            font-size: 22px;
+            margin-bottom: 20px;
+            text-align: center;
+            letter-spacing: 2px;
+            animation: pulseSuccessGlitch 2s infinite alternate;
+        }
+
+        @keyframes pulseSuccessGlitch {
+            0% { text-shadow: 0 0 10px rgba(0, 255, 102, 0.4); }
+            100% { text-shadow: 0 0 20px rgba(0, 255, 102, 0.8), 0 0 5px #fff; }
+        }
+
+        .final-text {
+            color: #ffffff;
+            font-size: 15px;
+            line-height: 1.8;
+            background: #151515;
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid #222;
+            animation: screenUnroll 0.7s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+        }
+
+        /* Всплывающее окно для вывода подарка */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: #151515;
+            border: 2px solid #00ff66;
+            border-radius: 12px;
+            padding: 30px 20px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0, 255, 102, 0.2);
+            animation: fadeInElement 0.4s ease forwards;
+        }
+
+        .modal-content h2 {
+            color: #00ff66;
+            font-size: 18px;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        .gift-location-box {
+            background: #050505;
+            border: 1px dashed #333;
+            padding: 15px;
+            color: #ffffff;
+            font-size: 16px;
+            border-radius: 6px;
+            margin: 20px 0;
+            line-height: 1.5;
+        }
+
+        .btn-close {
+            background: #222;
+            color: #aaa;
+            border: 1px solid #333;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            width: 100%;
+        }
+        .btn-close:hover {
+            background: #333;
+            color: #fff;
+        }
+
+        /* Общие переиспользуемые анимации */
+        @keyframes fadeInElement {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes screenUnroll {
+            0% { opacity: 0; transform: scaleY(0.8); transform-origin: top; }
+            100% { opacity: 1; transform: scaleY(1); transform-origin: top; }
+        }
+
+        .next-level-flash {
+            animation: levelFlash 0.4s ease-out;
+        }
+
+        @keyframes levelFlash {
+            0% { opacity: 0.3; transform: scale(0.99); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="terminal-container">
         
-        // При ошибке тоже убираем фокус, чтобы клавиатура не «прыгала» вверх-вниз
-        inputEl.blur(); 
+        <div id="introScreen">
+            <h1>ОБНАРУЖЕНА ЗАЩИТА</h1>
+            <div class="status-bar">СТАТУС: СИСТЕМА ЗАБЛОКИРОВАНА</div>
+            
+            <div class="intro-box">
+                Привет! Кто-то решил спрятать от тебя кое-что очень интересное и защитил это секретным шифром. 🔐<br><br>
+                Чтобы добраться до сути, тебе придется пройти проверку системы. Вопросы будут связаны с нашими общими воспоминаниями, важными датами и вещами, которые знаем только мы вдвоем.<br><br>
+                Готова проверить свою память и интуицию?
+            </div>
+            
+            <button class="btn-start" onclick="startQuest()">НАЧАТЬ ВЗЛОМ</button>
+        </div>
 
-        setTimeout(() => {
+        <div id="lockScreen" class="quest-section">
+            <h1>ЭЛЕКТРОННЫЙ ЗАМОК</h1>
+            <div class="status-bar" id="statusBar">Уровень защиты: 1 из 3</div>
+            
+            <div class="riddle-box" id="riddleText">Загрузка протоколов безопасности...</div>
+            
+            <div class="input-container">
+                <input type="text" class="lock-input" id="lockInputField" placeholder="ВВЕДИТЕ ОТВЕТ..." autocomplete="off">
+            </div>
+            
+            <button class="action-enter" onclick="checkAnswer()">ПОДТВЕРДИТЬ</button>
+        </div>
+
+        <div id="successScreen" class="success-screen">
+            <h1>СИСТЕМА РАЗБЛОКИРОВАНА</h1>
+            <div class="final-text">
+                Протокол защиты успешно отключен. Все уровни пройдены! 😎 <br><br>
+                Ты отлично справилась со всеми загадками и доказала, что никакие шифры тебе не страшны. Доступ к главному серверу открыт.
+                
+                <button class="btn-gift" onclick="openGiftModal()">ПОЛУЧИТЬ ПОДАРOК</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="giftModal">
+        <div class="modal-content">
+            <h2>МЕСТОПОЛОЖЕНИЕ НАЙДЕНО</h2>
+            <div class="gift-location-box" id="giftLocationText">
+                Загрузка данных...
+            </div>
+            <button class="btn-close" onclick="closeGiftModal()">ЗАКРЫТЬ</button>
+        </div>
+    </div>
+
+    <script>
+        // ================= НАСТРОЙКА ЗАГАДОК И ОТВЕТОВ =================
+        const questData = [
+            {
+                riddle: "Загадка 1: Дата нашего знакомства в формате ДДММ (например, если 12 мая, то 1205)",
+                answer: "1205" 
+            },
+            {
+                riddle: "Загадка 2: Наше любимое кодовое слово или город, куда мы мечтаем отправиться вместе?",
+                answer: "Питер"
+            },
+            {
+                riddle: "Загадка 3: Какое кодовое слово мы использовали, когда не хотели идти на пары/уроки?",
+                answer: "эвакуация"
+            }
+        ];
+
+        // ТУТ НАПИШИ МЕСТО, ГДЕ БУДЕТ СПРЯТАН ПОДАРOK:
+        const giftLocation = "На полке под твоим любимым свитшотом! ❤️";
+        // =============================================================
+
+        let currentStep = 0;
+        let isProcessing = false;
+
+        const introScreen = document.getElementById('introScreen');
+        const lockScreen = document.getElementById('lockScreen');
+        const riddleEl = document.getElementById('riddleText');
+        const statusEl = document.getElementById('statusBar');
+        const inputEl = document.getElementById('lockInputField');
+        const successScreen = document.getElementById('successScreen');
+        const giftModal = document.getElementById('giftModal');
+        const giftLocationEl = document.getElementById('giftLocationText');
+
+        function startQuest() {
+            introScreen.style.display = 'none';
+            lockScreen.style.display = 'block';
+            loadStep();
+        }
+
+        function loadStep() {
+            riddleEl.parentElement.classList.remove('next-level-flash');
+            void riddleEl.offsetWidth; 
+            riddleEl.parentElement.classList.add('next-level-flash');
+
+            riddleEl.textContent = questData[currentStep].riddle;
+            statusEl.textContent = `Уровень защиты: ${currentStep + 1} из ${questData.length}`;
+            statusEl.style.color = '#00ff66';
+            setTimeout(() => { statusEl.style.color = '#555'; }, 400);
+
+            inputEl.value = "";
             inputEl.classList.remove('error-state');
+            inputEl.placeholder = "ВВЕДИТЕ ОТВЕТ...";
+            
+            // Принудительно убираем фокус на стыке уровней, чтобы скрыть клавиатуру
+            inputEl.blur(); 
             isProcessing = false;
-        }, 1000);
-    }
-}
+        }
 
-function openGiftModal() {
-    giftModal.style.display = 'flex';
-    giftLocationEl.innerHTML = "ПОДКЛЮЧЕНИЕ К ДАННЫМ...<br><span style='color:#555;'>0%.. 45%.. 89%..</span>";
-    
-    setTimeout(() => {
-        giftLocationEl.innerHTML = `<strong>${giftLocation}</strong>`;
-    }, 1100);
-}
+        function checkAnswer() {
+            if (isProcessing) return;
 
-function closeGiftModal() {
-    giftModal.style.display = 'none';
-}
+            const val = inputEl.value.trim().toLowerCase();
+            const ans = questData[currentStep].answer.trim().toLowerCase();
 
-// Привязка событий
-btnStartQuest.addEventListener('click', startQuest);
-btnCheckAnswer.addEventListener('click', checkAnswer);
-btnOpenGift.addEventListener('click', openGiftModal);
-btnCloseGift.addEventListener('click', closeGiftModal);
+            if (val === "") return;
 
-inputEl.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-        checkAnswer();
-    }
-});
+            isProcessing = true;
+            inputEl.blur(); // Скрываем клавиатуру сразу при отправке ответа
 
-inputEl.addEventListener('input', function() {
-    inputEl.classList.remove('error-state');
-});
+            if (val === ans) {
+                currentStep++;
+                if (currentStep < questData.length) {
+                    loadStep();
+                } else {
+                    lockScreen.style.display = 'none';
+                    successScreen.style.display = 'block';
+                }
+            } else {
+                inputEl.classList.remove('error-state');
+                void inputEl.offsetWidth; 
+                inputEl.classList.add('error-state');
+                inputEl.value = "";
+                inputEl.placeholder = "НЕВЕРНЫЙ КОД!";
+                
+                setTimeout(() => {
+                    isProcessing = false;
+                }, 400);
+            }
+        }
+
+        function openGiftModal() {
+            giftModal.style.display = 'flex';
+            giftLocationEl.innerHTML = "ПОДКЛЮЧЕНИЕ К ДАННЫМ...<br><span style='color:#555;'>0%.. 45%.. 89%..</span>";
+            
+            setTimeout(() => {
+                giftLocationEl.innerHTML = `<strong>${giftLocation}</strong>`;
+            }, 1100);
+        }
+
+        function closeGiftModal() {
+            giftModal.style.display = 'none';
+        }
+
+        inputEl.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+        inputEl.addEventListener('input', function() {
+            inputEl.classList.remove('error-state');
+        });
+    </script>
+</body>
+</html>
